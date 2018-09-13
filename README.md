@@ -16,7 +16,7 @@ Requires the Anaconda Distribution. Install Anaconda Navigator on Windows
 - gensim
 - nltk 
 
-Install via opening anaconda navigator --> Environments -> base root -> Open Terminal -> Enter "conda install <packagename>
+Install via opening anaconda navigator --> Environments -> base root -> Open Terminal -> Enter "conda install *packagename*
   
   
   

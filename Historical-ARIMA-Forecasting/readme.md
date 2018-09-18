@@ -1,6 +1,6 @@
 # README 
 
-The main file in this folder is “ARIMA Forecast Paper.” The purpose of this paper was to analyze all structured/mortgage CUSIPS in the portfolios and identify potential warning signs regarding delinquencies/CPR and principal pay-downs. 
+The purpose of the associated R file is to analyze all structured/mortgage CUSIPS in the portfolios and identify potential warning signs regarding delinquencies/CPR and principal pay-downs. 
 
 The method used to model and analyze was the ARIMA method. ARIMA is a standard and widely-used family of methods for statistical time-series modelling and forecasting.  
 

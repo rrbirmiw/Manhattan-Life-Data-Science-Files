@@ -20,5 +20,3 @@ The R file containing the source code is called arima_analysis_report.rmd. This 
 To view CPR forecasts, for cusip “foo”: `main("foo", 'cpr.xlsx', TRUE)`
 To view DQ forecasts, for cusip “foo”: `main("foo", 'dq.xlsx', TRUE)`
 
-
-

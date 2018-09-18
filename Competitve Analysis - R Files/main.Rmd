@@ -1,0 +1,288 @@
+---
+title: "Competitive Analysis"
+author: "Rahul Birmiwal 2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+## USAGE 
+  1. Requires Bloomberg -> PSRT -> Select desired firms to analyze -> Analyze -> Holdings -> Group by BICS Sub-Sector -> Actions -> Export Formatted xls 
+  2. Given user's chosen input files produced by step 1, save all those to a folder
+  3. save this file into that folder, this file will search for all .xls "portfolio" files. 
+  4. Run, assuming all dependencies are installed 
+  5. The user may *output the grouped allocation tables* at the end of this R file by appropriately renaming the filenames. 
+    - Note that the list **X** is such that **X[j]** contains an allocation table, the name of which can be found in **cnames[j]**
+
+
+
+## DEPENDENCIES
+
+  - ggplot
+  - dplyr 
+  - treemapify
+  - knitr
+  - readxl 
+  - gridExtra
+
+
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(treemapify)
+library(knitr)
+library(readxl)
+firm_of_interest <- 'sent'
+```
+
+
+### Table of Contents
+
+  1. 'Broad' Competitive Analysis 
+      - Portfolio Distributions 
+  2. 'Granular' Analysis 
+      - Treemap Visualizations
+      - Tables of Total Asset Allocation Weights By Company 
+
+The purpose of this report is to do broad-picture qualitative portfolio analysis between Manhattan Life and its top-competition firms. Now in particular, this R file seeks to do a one-on-one comparison between Sentinel Security Life Insurance and Manhattan Life. One question of interest is why Sentinel is able to pay a liability rate of $4% on one of its product; while Manhattan only 3.1% -- i.e. what covariates in Sentinel's porfolio differ from MLIC such that they can pay at a higher rate? 
+
+
+### Functions
+
+  - port_reader: Used to read in the portfolio .xls files that were retrieved via Bloomberg PORT export 
+  - summarize_by_sector: helper function that summarizes data used for the histogram plots 
+  - heirarchy_fill: function used to 'populate' (fill down) the parent-child structure of the excel file 
+  - process_data: function that takes in the full dataframe from heirarchy_fill(), filters by finding the underlying issuers 
+   whose net portoflio weight lies in the top 10%, and also filters by the important market sectors used for the treemap 
+  - plot_treemap: function that generates the treemap visualizations 
+
+```{r}
+port_reader <- function(fname) { 
+
+  df = readxl::read_excel(fname, col_names = T , skip = 9) #starting row at row 9 
+  #print("#####################")
+  #print(df %>% head(3))
+  cname <- df$X__1[[1]][1] #read in the company name 
+  df <- df[,-1] #remove blank at top 
+  
+  #Rename key columns 
+  colnames(df)[1] <- 'Sector'
+  colnames(df)[2] <- 'Subsector'
+  colnames(df)[3] <- 'Security'
+  colnames(df)[4] <- 'X..Wgt'
+  df$Sector <- as.character(df$Sector)
+
+  #Cast to appropriate types and fix issue with number formatting 
+  df$Subsector <- (as.character(df$Subsector))
+  df$Security <- (as.character(df$Security))
+  df$X..Wgt <- as.numeric(gsub(",","",df$X..Wgt))
+  df$Maturity <- stringr::str_sub(df$Security,-2,-1)
+  df$Maturity <- as.numeric(df$Maturity)
+  return(list(cname, df)) #return List of <comapny name, its dataframe> 
+} 
+
+#Function does a group_by to generate statistical totals based on overarching sectors
+#Needed for the bar chart overlays 
+summarize_by_sector <- function(df) { 
+  df <- df %>% group_by(Sector) %>% summarise(Weight=sum(X..Wgt), MktVal = sum(`Market Value`))
+  return(df)
+}
+
+
+
+
+```
+
+
+
+```{r}
+heirarchy_fill <- function(df) {
+  foundFirst <- FALSE 
+  for (i in 1:nrow(df)){
+         if (is.na(df$Sector[i]) | df$Sector[i] == '') {
+              if (foundFirst == FALSE) { 
+                foundFirst <-TRUE
+                next 
+              } else { 
+                df$Sector[i]<-df$Sector[i-1] 
+              }
+         }
+  }
+
+
+
+  foundFirst <- FALSE 
+  for (i in 1:nrow(df)){
+         if (is.na(df$Subsector[i]) | df$Subsector[i] == '') {
+              if (foundFirst == FALSE) { 
+                foundFirst <-TRUE
+                next 
+              } else { 
+                df$Subsector[i]<-df$Subsector[i-1] 
+              }
+         }
+  }
+  
+  df <- df[!(is.na(df$Security) | df$Security==""), ]
+  
+  return(df)
+}
+
+```
+
+
+```{r}
+imp_sectors = c("Asset Backed Securities", 
+"Banks", 
+"Commericial MBS", 
+"Communications", 
+"Consumer, Cylical", 
+"Consumer, Non-cyclical", 
+"Energy", 
+"Financial", 
+"Government", 
+"Industrial", 
+"Mortgage Securities", 
+"REITS", 
+"Whole Loan Collateral CMO")
+
+
+
+processData <- function(df, only_imp) { 
+  fixed <- heirarchy_fill(df)
+
+  if (only_imp == TRUE) { 
+    fixed <- fixed[fixed$Sector %in% imp_sectors, ]  
+  }
+  fixed$RootEquity <- sapply(fixed$Security,function(x) strsplit(x, " ")[[1]][1])
+  importantData <- fixed %>% group_by(Sector, Subsector, RootEquity ) %>% 
+  summarise(equityWeight = sum(X..Wgt), avgMaturity = mean(Maturity) - 18) %>% filter(equityWeight >= max(0.1, quantile(equityWeight, 0.90) ))
+  return(importantData)
+}
+```
+
+
+```{r}
+plot_treemap <- function(d, cname) { 
+  ggplot(d, aes(area=equityWeight, fill=Sector, subgroup = Sector,  subgroup2 = Subsector, label=RootEquity)) +   geom_treemap() + 
+  geom_treemap_subgroup_border() +  geom_treemap_subgroup2_border() + geom_treemap_subgroup2_text(place = "topright", grow = F, alpha = 0.8, colour = "black", fontface = "italic", size = 12) + 
+  geom_treemap_text(colour = "white", place = "centre", reflow = T, size = 10, alpha=0.9, fontface='bold') + ggtitle(paste('Granular Breakdown For',cname )) + theme(plot.title = element_text(size=7)) 
+
+}
+
+```
+
+
+
+```{r LOAD PSRT DATA}
+psrt_data_list <- list() 
+cnames <- list() 
+files <- list.files(path=getwd(), pattern="*.xls", full.names=T, recursive=FALSE)
+files <- files[unlist(lapply(files, function(x) (grepl(firm_of_interest, x)==TRUE  | grepl('manh', x)==TRUE) ))]
+
+
+# Dataframe that consists of all the 'summary' dataframes stacked ontop of each other 
+master_df <- data.frame() 
+
+
+for (i in 1:length(files)) { 
+  res <- port_reader(files[i]) #read in the List<companyName, data> 
+  cname <- (res[[1]]) #get the company name 
+  cnames[[i]] <- cname #store the company name 
+  full_df <- (res[[2]])  #store dataframe in temp variable 
+
+  summary_df <- summarize_by_sector(full_df) #do summary analysis for the plot 
+  psrt_data_list[[i]] <- full_df #store the fll dataframe in a list 
+  
+  #Hardcoard a yield column into the dataframe based on appropriate company 
+  if (grepl("ATLANTIC", cname) == TRUE) { 
+    yield <- 4.00  
+  }
+  if (grepl("COLORADO", cname) == TRUE) { 
+    yield <- 3.80  
+  }
+  if (grepl("FIDELITY", cname) == TRUE) { 
+    yield <- 3.80 
+  }
+  if (grepl("LIBERTY", cname) == TRUE) { 
+    yield <- 3.70 
+  }
+  if (grepl("MANHATTAN", cname) == TRUE) { 
+    yield <- 3.10
+  }
+  if (grepl("SENTINEL", cname) == TRUE) { 
+    yield <- 4.00  
+  }
+  if (grepl("PHOENIX", cname) == TRUE) { 
+    yield <- 3.65 
+  }
+  if (grepl("NEW", cname) == TRUE) { 
+    yield <- 3.55  
+  }
+  summary_df$Var <- cname
+  summary_df$Rate <- yield #store the yield  
+  master_df <- rbind(master_df, summary_df) #verticalstack the summary dataframe
+}
+
+
+
+```
+
+```{r}
+master_df %>% head(10) 
+```
+
+### Analyze Variance in Portfolio Compositions
+
+```{r, fig.height=8, fig.width=14}
+theme_set(theme_light())
+g <- ggplot(master_df, aes(Sector, Weight, fill=Var)) + geom_bar(stat="identity", position="dodge", width = 0.7, alpha = 0.8) + theme(text = element_text(size = 15), axis.text.x = element_text(angle=80, hjust=1)) + ggtitle(paste("Portfolio Distributions of Manhattan &",firm_of_interest))
+g
+  
+```
+
+
+
+  
+## 2. Granular Competitive Analysis
+
+
+```{r}
+
+p = list()
+x = list() 
+
+
+for (i in 1:length(psrt_data_list)) { 
+
+  cname <- cnames[[i]]
+  cdata  <- psrt_data_list[[i]]
+  cdata <- processData(cdata, TRUE )
+  p[[i]] <-  plot_treemap(cdata, cname)
+  x[[i]] <- cdata
+} 
+
+
+```
+
+
+
+```{r fig.width=13, fig.height=14}
+
+do.call(grid.arrange, p)
+
+```
+
+
+```{r}
+do.call(print, x)
+```
+
+
+```{r}
+write.csv(x[1], paste(cnames[1],"_Grouped_Holdings_Sept18.csv",sep=""))
+write.csv(x[2], paste(cnames[2],"_Grouped_Holdings_Sept18.csv",sep=""))
+```

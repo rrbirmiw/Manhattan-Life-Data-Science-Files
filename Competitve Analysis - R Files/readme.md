@@ -1,4 +1,4 @@
-#README 
+# README 
 
 The main file in this folder is “ARIMA Forecast Paper.” The purpose of this paper was to analyze all structured/mortgage CUSIPS in the portfolios and identify potential warning signs regarding delinquencies/CPR and principal pay-downs. 
 

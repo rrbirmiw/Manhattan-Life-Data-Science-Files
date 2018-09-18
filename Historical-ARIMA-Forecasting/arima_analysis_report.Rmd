@@ -1,0 +1,225 @@
+---
+title: "ARIMA-Based Modelling and Forecasting of Delinquency and CPR Speeds"
+author: "Rahul Birmiwal"
+output: html_document
+---
+
+
+## USAGE 
+
+Along with *this* R file, we require two assisting data files: 
+  1. dq.xlsx
+  2. cpr.xlsx 
+
+These files are private and cannot be publicly hosted. They contain, for each cusip in a portfolio, monthly data w.r.t delinquencies and CPR speeds, respectively. 
+
+To use this file, *this* R file must be in the same working directory and level as the aformenentioned two files. They can be found in *RAHUL_FINAL_PROJECT_FILES* folder on his desktop in the apprpropriate folder. Once completed, the user can Run All to generate the resultant csv files with year-out projections. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(XLConnect)
+library(dplyr)
+library(dbplyr)
+library(ggplot2)
+library(reshape2)
+library(tidyr)
+library(tseries)
+library(forecast)
+```
+
+
+
+
+
+
+
+
+### Function to tidy the data
+```{r, include=FALSE}
+fix_data <- function(orig_data) { 
+  
+  col_names <- colnames(orig_data)
+  date_col_names <- as.integer(col_names[2:length(col_names)])
+  date_col_names <- (lapply(date_col_names, function(x) as.Date(x, origin='1899-12-30')))
+  date_col_names <- do.call('c',date_col_names )
+  date_col_names <- as.character(date_col_names )
+  colnames(orig_data) <- c("CUSIP2", date_col_names)
+  ts_data <- tidyr::gather(orig_data, Date, DQ_VAL, -CUSIP2)
+ 
+  return(ts_data)
+  
+}
+
+```
+
+### Function to run ARIMA modelling on a single CUSIP csp
+
+```{r, include=FALSE}
+arima_model <- function(fixed_data, csp, forecast_len,  ma_smooth_order=3, do_plot=TRUE) { 
+  out <- tryCatch(
+    { 
+      #get the data for THIS cusip 
+      test_data <- fixed_data[ fixed_data$CUSIP2==csp, ]
+      test_data$DQ_VAL <- as.numeric(test_data$DQ_VAL)
+      print(test_data %>% head(10))
+      #plot its original DQ data 
+      p <- ggplot(test_data, aes(as.Date(Date), DQ_VAL)) + geom_line() + scale_x_date('month') + ylab('Speeds By Month Uncleaned') + ggtitle(paste("CUSIP:", csp, sep=""))
+      if (do_plot) print(p)
+      
+      #data preprocessing - MA smoothing by smooth_order
+      test_data$dq_ma <-rev(ma(test_data$DQ_VAL, order=ma_smooth_order)) #reverse
+      
+      
+      data_len <- length(test_data$dq_ma)
+      
+      #dq_ma_ts <- (ts(na.omit(test_data$dq_ma), frequency=12))
+      dq_ma_ts <- (ts(na.omit(test_data$dq_ma), frequency=floor(data_len/3)))
+      decomp = stl(dq_ma_ts, s.window ='periodic')
+      deseasonal_dq <- seasadj(decomp)
+      #if (do_plot) plot(decomp, main="STL Decomposition")
+      
+      
+      fit <- auto.arima(deseasonal_dq, seasonal=FALSE )
+      #if (do_plot) tsdisplay(residuals(fit), main='Non-seasonal Model Residuals')
+      
+      fit_seasonal <- auto.arima(deseasonal_dq, seasonal=TRUE )
+      #if (do_plot) tsdisplay(residuals(fit_seasonal), main='Seasonal Model Residuals')
+      
+      fcast <- forecast(fit, h=forecast_len) 
+      #if (do_plot) plot(fcast, main="Forecast Using Non-Seasonal Model")
+      
+      fcast_season <- forecast(fit_seasonal, h=forecast_len) 
+      if (do_plot) plot(fcast_season, main="Forecast Using the Seasonal Model")
+      #if (do_plot)  print(fcast_season$mean)
+      
+      
+      #Holdout Testing & Visual
+      if (do_plot) { 
+          len <- length(deseasonal_dq)
+          my_start <- floor(0.9*len)
+          hold <- window(ts(deseasonal_dq), start=my_start )
+          fit_no_holdout <- auto.arima(ts(deseasonal_dq[-c(my_start:len)]))
+          fcast_no_holdout <- forecast(fit_no_holdout, h <- len-my_start)
+          
+          plot(fcast_no_holdout)
+          lines(ts(deseasonal_dq))
+      }
+      return(fcast_season$mean)
+    }, 
+    error=function(cond) { 
+      return(c(0,0,0,0,0))  
+    }, 
+    warning=function(cond){},
+    finally = {
+      print(paste("Did Cusip#", csp, sep=""))
+    }
+  ) 
+  return(out)
+      
+}
+```
+
+
+```{r, include=FALSE}
+main <- function(CUSIP_NUM, fname,  do_plot=FALSE) { 
+
+  df = readxl::read_excel(fname, col_names = T , skip = 0, na='#N/A N/A') #starting row at row 9 
+  fixed_df <- fix_data(df)
+  
+  
+  my_forecast <- arima_model(fixed_df,CUSIP_NUM, 12,  do_plot=do_plot )
+  return(my_forecast)
+  
+}
+
+```
+
+
+
+
+## Generate CPR Forecasts for All Cusips and Export to CSV
+```{r eval=FALSE, include=FALSE}
+
+ fname <- 'cpr.xlsx'
+
+ master_data <- readxl::read_excel(fname, col_names = T , skip = 0, na='#N/A N/A') #starting row at row
+ data_len <- nrow(master_data)
+ forecast_df <- data.frame(cusip = character(data_len), N1 = double(data_len),
+                                                N2 = double(data_len),
+                           N3 = double(data_len),N4 = double(data_len), N5 = double(data_len), 
+                           N6 = double(data_len),N7 = double(data_len), N8 = double(data_len), 
+                          N9 = double(data_len),N10 = double(data_len), N11 = double(data_len), 
+                          N12 = double(data_len) 
+                          ,stringsAsFactors = FALSE)
+ 
+ 
+ cusips <- as.character(master_data$CUSIP)
+   
+ counter <- 1
+ for (i in 1:length(cusips)) { 
+     csp <- cusips[i]
+     predictions <- main(csp, fname)
+     if (predictions[1] > 0) { 
+       new_row <- c(csp, predictions)
+      
+       forecast_df[counter,] <- c(csp, predictions)
+       counter <- counter + 1 
+     }
+   
+ }
+```
+ 
+```{r, eval=FALSE,include=FALSE}
+ write.csv(forecast_df, file='forecasted_cpr_12mn.csv')
+```
+
+## Generate Delinquency Forecasts for All Cusips and Export to CSV
+
+```{r eval=FALSE, include=FALSE}
+
+ fname <- 'dq.xlsx'
+
+ master_data <- readxl::read_excel(fname, col_names = T , skip = 0, na='#N/A N/A') #starting row at row
+ data_len <- nrow(master_data)
+ forecast_df <- data.frame(cusip = character(data_len), N1 = double(data_len),
+                                                N2 = double(data_len),
+                           N3 = double(data_len),N4 = double(data_len), N5 = double(data_len), 
+                           N6 = double(data_len),N7 = double(data_len), N8 = double(data_len), 
+                          N9 = double(data_len),N10 = double(data_len), N11 = double(data_len), 
+                          N12 = double(data_len) 
+                          ,stringsAsFactors = FALSE)
+ 
+ 
+ cusips <- as.character(master_data$CUSIP)
+   
+ counter <- 1
+ for (i in 1:length(cusips)) { 
+     csp <- cusips[i]
+     predictions <- main(csp, fname)
+     if (predictions[1] > 0) { 
+       new_row <- c(csp, predictions)
+      
+       forecast_df[counter,] <- c(csp, predictions)
+       counter <- counter + 1 
+     }
+   
+ }
+```
+ 
+```{r, eval=FALSE,include=FALSE}
+ write.csv(forecast_df, file='forecasted_dq_12mn.csv')
+```
+
+
+## View Individual Cusips And Associated Forecast Visualizations 
+
+```{r}
+main("759950AY4", 'cpr.xlsx', TRUE)
+```
+
+```{r}
+main("759950AY4", 'dq.xlsx',  TRUE)
+```

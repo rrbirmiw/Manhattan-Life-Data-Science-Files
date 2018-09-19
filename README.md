@@ -38,10 +38,3 @@ Asset management files require R Studio and associated package dependencies list
 For Python: Install via opening anaconda navigator --> Environments -> base root -> Open Terminal -> Enter "conda install *packagename*
   
   
-  
-## Description of Python Files 
-Please refer to docstrings for each `.py` file in Python_Files folder 
-
-
-
-

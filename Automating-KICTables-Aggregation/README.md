@@ -1,9 +1,9 @@
-File Formats: 
+# File Formats: 
 
 execute_run_txt.txt -> Save As -> File Type --> All File Types --> Save with name 'execute_run.bat'
 run_txt.txt -> Save As -> File Type --> All File Types --> Save with name 'run.ps1'
 
-To Use: 
+# To Use: 
 
 Double click 'execute_run', which is a windows batch file that will run the Powershell script run.ps1 
 This will create the master/summary worksheet named "MasterSummary"

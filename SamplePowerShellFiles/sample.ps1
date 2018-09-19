@@ -1,6 +1,4 @@
 Import-Module PSExcel
-Import-Module MergeCSV
-Import-Module importexcel
 Import-Module ImportExcel
 
 #-----------------------------------------------------------------------------------

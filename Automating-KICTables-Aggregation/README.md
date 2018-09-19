@@ -1,7 +1,7 @@
-# File Formats: 
+# File Format Changing to : 
 
-execute_run_txt.txt -> Save As -> File Type --> All File Types --> Save with name 'execute_run.bat'
-run_txt.txt -> Save As -> File Type --> All File Types --> Save with name 'run.ps1'
+- execute_run_txt.txt -> Save As -> File Type --> All File Types --> Save with name 'execute_run.bat'
+- run_txt.txt -> Save As -> File Type --> All File Types --> Save with name 'run.ps1'
 
 # To Use: 
 

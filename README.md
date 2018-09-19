@@ -17,21 +17,21 @@ Data science files require the Anaconda Distribution. Install Anaconda Navigator
 Asset management files require R Studio and associated package dependencies listed in the .rmd file
 
 ## Package Dependencies 
-- Python 
+#### Python 
  - scikit-learn 
  - numpy 
  - pandas 
  - pathlib 
  - gensim
  - nltk 
-- R
+#### R
  - ggplot 
  - dplyr
  - treemapify 
  - knitr 
  - readxl 
  - gridExtra 
-- Powershell 
+#### Powershell 
  - ImportExcel 
  - PSExcel 
 

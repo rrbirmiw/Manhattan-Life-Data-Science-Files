@@ -10,21 +10,32 @@ This repo also contains two other projects associated with asset management. Due
   * Basic Powershell tutorial 
   * Using Powershell to aggregate KIC tables 
 
-All implementations require Python 3+
+All implementations require Python 3+, R-Studio, base Windows Powershell (respectively)
 
 ## Setup 
 Data science files require the Anaconda Distribution. Install Anaconda Navigator on Windows
 Asset management files require R Studio and associated package dependencies listed in the .rmd file
 
-## Non-Base Package Dependencies 
-- scikit-learn 
-- numpy 
-- pandas 
-- pathlib 
-- gensim
-- nltk 
+## Package Dependencies 
+- Python 
+ - scikit-learn 
+ - numpy 
+ - pandas 
+ - pathlib 
+ - gensim
+ - nltk 
+- R
+ - ggplot 
+ - dplyr
+ - treemapify 
+ - knitr 
+ - readxl 
+ - gridExtra 
+- Powershell 
+ - ImportExcel 
+ - PSExcel 
 
-Install via opening anaconda navigator --> Environments -> base root -> Open Terminal -> Enter "conda install *packagename*
+For Python: Install via opening anaconda navigator --> Environments -> base root -> Open Terminal -> Enter "conda install *packagename*
   
   
   

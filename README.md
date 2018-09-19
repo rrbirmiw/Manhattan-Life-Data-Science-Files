@@ -10,7 +10,8 @@ This repo also contains two other projects associated with asset management. Due
 All implementations require Python 3+
 
 ## Setup 
-Requires the Anaconda Distribution. Install Anaconda Navigator on Windows 
+Data science files require the Anaconda Distribution. Install Anaconda Navigator on Windows
+Asset management files require R Studio and associated package dependencies listed in the .rmd file
 
 ## Non-Base Package Dependencies 
 - scikit-learn 

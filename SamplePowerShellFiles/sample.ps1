@@ -24,6 +24,20 @@ $Workbook2 = Import-Excel  $pathname | Select FirstName, LastName, Major #where 
 $Workbook2 | Format-Table
 #-----------------------------------------------------------------------------------
 
+
+#### REMARK ON HEADERS 
+<# If the header is NOT in the first row, we can use the -StartRow parameter to specify where to start i.e. 
+$Workbook2 = Import-Excel  $pathname -StartRow 5| Select FirstName, LastName
+
+would start reading at row 5
+
+This step is CRUCIAL if the headers are not in the top row, otherwise the code will fail. 
+#> 
+
+
+
+
+
 # Inner Join enrollment.xlsx with college_locations.xlsx
 Write-Output 'Example 3'
 $enrollment = Import-Excel -Path (Join-Path -Path $WorkingDirectory -ChildPath "enrollment.xlsx")

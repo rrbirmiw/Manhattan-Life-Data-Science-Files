@@ -64,7 +64,7 @@ arima_model <- function(fixed_data, csp, forecast_len,  ma_smooth_order=3, do_pl
       #get the data for THIS cusip 
       test_data <- fixed_data[ fixed_data$CUSIP2==csp, ]
       test_data$DQ_VAL <- as.numeric(test_data$DQ_VAL)
-      print(test_data %>% head(10))
+  
       #plot its original DQ data 
       p <- ggplot(test_data, aes(as.Date(Date), DQ_VAL)) + geom_line() + scale_x_date('month') + ylab('Speeds By Month Uncleaned') + ggtitle(paste("CUSIP:", csp, sep=""))
       if (do_plot) print(p)
@@ -123,7 +123,7 @@ arima_model <- function(fixed_data, csp, forecast_len,  ma_smooth_order=3, do_pl
 ```
 
 
-```{r, include=FALSE}
+```{r}
 main <- function(CUSIP_NUM, fname,  do_plot=FALSE) { 
 
   df = readxl::read_excel(fname, col_names = T , skip = 0, na='#N/A N/A') #starting row at row 9 
@@ -141,7 +141,7 @@ main <- function(CUSIP_NUM, fname,  do_plot=FALSE) {
 
 
 ## Generate CPR Forecasts for All Cusips and Export to CSV
-```{r eval=FALSE, include=FALSE}
+```{r  }
 
  fname <- 'cpr.xlsx'
 
@@ -172,13 +172,13 @@ main <- function(CUSIP_NUM, fname,  do_plot=FALSE) {
  }
 ```
  
-```{r, eval=FALSE,include=FALSE}
+```{r, include=FALSE}
  write.csv(forecast_df, file='forecasted_cpr_12mn.csv')
 ```
 
 ## Generate Delinquency Forecasts for All Cusips and Export to CSV
 
-```{r eval=FALSE, include=FALSE}
+```{r }
 
  fname <- 'dq.xlsx'
 
@@ -209,7 +209,7 @@ main <- function(CUSIP_NUM, fname,  do_plot=FALSE) {
  }
 ```
  
-```{r, eval=FALSE,include=FALSE}
+```{r, include=FALSE}
  write.csv(forecast_df, file='forecasted_dq_12mn.csv')
 ```
 

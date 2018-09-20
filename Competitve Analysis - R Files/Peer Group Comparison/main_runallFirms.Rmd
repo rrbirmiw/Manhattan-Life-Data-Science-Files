@@ -126,19 +126,7 @@ heirarchy_fill <- function(df) {
 
 
 ```{r}
-imp_sectors = c("Asset Backed Securities", 
-"Banks", 
-"Commericial MBS", 
-"Communications", 
-"Consumer, Cylical", 
-"Consumer, Non-cyclical", 
-"Energy", 
-"Financial", 
-"Government", 
-"Industrial", 
-"Mortgage Securities", 
-"REITS", 
-"Whole Loan Collateral CMO")
+
 
 
 
@@ -182,39 +170,19 @@ master_df <- data.frame()
 for (i in 1:length(files)) { 
   res <- port_reader(files[i]) #read in the List<companyName, data> 
   cname <- (res[[1]]) #get the company name 
+  if (grepl("SAMPLE", cname)==TRUE) { next }
+  
+  
   print(cname)
   cnames[[i]] <- cname #store the company name 
   full_df <- (res[[2]])  #store dataframe in temp variable 
-
+  
   summary_df <- summarize_by_sector(full_df) #do summary analysis for the plot 
   psrt_data_list[[i]] <- full_df #store the fll dataframe in a list 
   
   yield <- 4
   #Hardcoard a yield column into the dataframe based on appropriate company 
-  if (grepl("ATLANTIC", cname) == TRUE) { 
-    yield <- 4.00  
-  }
-  if (grepl("COLORADO", cname) == TRUE) { 
-    yield <- 3.80  
-  }
-  if (grepl("FIDELITY", cname) == TRUE) { 
-    yield <- 3.80 
-  }
-  if (grepl("LIBERTY", cname) == TRUE) { 
-    yield <- 3.70 
-  }
-  if (grepl("MANHATTAN", cname) == TRUE) { 
-    yield <- 3.10
-  }
-  if (grepl("SENTINEL", cname) == TRUE) { 
-    yield <- 4.00  
-  }
-  if (grepl("PHOENIX", cname) == TRUE) { 
-    yield <- 3.65 
-  }
-  if (grepl("NEW", cname) == TRUE) { 
-    yield <- 3.55  
-  }
+
   summary_df$Var <- cname
   summary_df$Rate <- yield #store the yield  
   master_df <- rbind(master_df, summary_df) #verticalstack the summary dataframe
@@ -247,7 +215,7 @@ g <- ggplot(others_df, aes(Sector, Weight, fill=Var)) + geom_bar(stat="identity"
 g
 ```
 
-```{r, fig.height=12, fig.width=12}
+```{r, fig.height=8, fig.width=12}
 
 
 g <- ggplot(others_df, aes(Sector, Weight, fill=Var)) + geom_bar(stat="identity", position="dodge", width=0.8, alpha = 0.5) + scale_fill_brewer(palette='Blues') + geom_bar(data=wula_df, stat="identity", position="dodge", width=0.2, alpha = 1, fill='tomato2', color='black') + theme(text = element_text(size = 11), axis.text.x = element_text(angle=90, hjust=1)) + ggtitle(" WULA vs. Top Competition (WULA=ORANGE)")

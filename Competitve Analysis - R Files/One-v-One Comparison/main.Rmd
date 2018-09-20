@@ -190,6 +190,7 @@ master_df <- data.frame()
 for (i in 1:length(files)) { 
   res <- port_reader(files[i]) #read in the List<companyName, data> 
   cname <- (res[[1]]) #get the company name 
+  if (grepl("SAMPLE", cname)==TRUE) { next }
   cnames[[i]] <- cname #store the company name 
   full_df <- (res[[2]])  #store dataframe in temp variable 
 
